@@ -1,7 +1,6 @@
 from flask import Flask, request, redirect, render_template, session, flash
 from flask_sqlalchemy import SQLAlchemy 
 
-
 app = Flask(__name__)
 app.config['DEBUG'] = True
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://garb-finder:garb-finder@localhost:8889/garb-finder'
@@ -16,39 +15,34 @@ class User (db.Model):
     password = db.Column(db.String(120))
     saved_item = db.relationship("Item", backref = "owner")
 
-
     def __init__(self, username, password):
         self.username = username
         self.password = password
-        
 
 class Item (db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), unique=True)
-    # description = db.Column(db.String(2000))
-    # culture = db.Column(db.String(120))
-    # climate = db.Column(db.String(120))
-    # gender = db.Column(db.String(120))
-    # item_type = db.Column(db.String(120)) 
-    # time_period_start = db.Column(db.Integer)
-    # time_period_end = db.Column(db.Integer)
-   
-    owner_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    
-    def __init__(self, name, owner):
-    # , description, culture, climate, gender, item_type, time_period_start, time_period_end
-        self.name = name
-        # self.description = description
-        # self.culture = culture
-        # self.climate = climate
-        # self.gender = gender
-        # self.item_type = item_type
-        # self.time_period_end = time_period_start
-        # self.time_period_end = time_period_end
-        self.owner = owner
+    owner_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    culture = db.Column(db.String(120))
+    climate = db.Column(db.String(120))
+    gender = db.Column(db.String(120))
+    item_type = db.Column(db.String(120)) 
+    time_period_start = db.Column(db.Integer)
+    time_period_end = db.Column(db.Integer)
+    description = db.Column(db.String(2000))
 
- 
+    def __init__(self, name, owner_id,culture,climate,gender,item_type,time_period_start,time_period_end,description):
+        self.name = name
+        self.owner_id = owner_id
+        self.culture = culture
+        self.climate = climate
+        self.gender = gender
+        self.item_type = item_type
+        self.time_period_start = time_period_start
+        self.time_period_end = time_period_end
+        self.description = description
+
 class Climate (db.Model):
     id = db.Column(db.Integer, primary_key=True)
     # name = db.Column(db.String120))
@@ -74,7 +68,8 @@ def login():
             incorrect_info = "Incorrect username or password"
             error_bool=True    
         if error_bool == False:
-            session['user'] = username 
+            session['user'] = username
+            print ("/login: ",session['user'])
             return redirect('/saved_items')
         else:
             return render_template("login.html", incorrect_info=incorrect_info)    
@@ -142,8 +137,9 @@ def index():
 def my_stuff():
     if request.method == 'POST':
         item_name = request.form['item']
-        owner = User.query.filter_by(username=session['username']).first()
-        new_item = Item(item_name, owner)
+        owner = User.query.filter_by(username=session['user']).first()
+        print("owner=",owner)
+        new_item = Item(item_name, owner, 'viking','subartic','male','clothing',1500,1599,'Its another item!')
         db.session.add(new_item)
         db.session.commit()
     return render_template("saved_items.html")
@@ -159,5 +155,3 @@ def default():
  
 if __name__ == "__main__":
     app.run()
-
-
