@@ -1,5 +1,5 @@
 from flask import Flask, request, redirect, render_template, session, flash
-from flask_sqlalchemy import SQLAlchemy 
+from flask_sqlalchemy import SQLAlchemy
 
 
 app = Flask(__name__)
@@ -14,18 +14,18 @@ class User (db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(120))
     password = db.Column(db.String(120))
-#    saved_item = db.relationship("Item", backref = "owner")
+#   saved_item = db.relationship("Item", backref = "owner")
 
 
     def __init__(self, username, password):
         self.username = username
         self.password = password
-        
+
 
 class Item (db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120), unique=True)
+    name = db.Column(db.String(120))
     # description = db.Column(db.String(2000))
     # culture = db.Column(db.String(120))
     # climate = db.Column(db.String(120))
@@ -52,7 +52,7 @@ class Item (db.Model):
  
 class Climate (db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    # name = db.Column(db.String120))
+    name = db.Column(db.String(120))
 
     def __init__(self, name):
         self.name = name
@@ -66,6 +66,7 @@ def login():
         password = request.form['password']
         incorrect_info=""
         q_user = User.query.filter_by(username=username).first()
+        print("==== /login q_user = ",q_user)
         error_bool=False
         if q_user:
             if password != q_user.password:
@@ -75,7 +76,8 @@ def login():
             incorrect_info = "Incorrect username or password"
             error_bool=True    
         if error_bool == False:
-            session['user'] = username 
+            session['user'] = username
+            print("==== /login redirect to /saved_items")
             return redirect('/saved_items')
         else:
             return render_template("login.html", incorrect_info=incorrect_info)    
@@ -122,37 +124,50 @@ def require_login():
     if request.endpoint not in allowed_routes and 'user' not in session:
     # restricted_routes = ['saved_items']
     # if request.endpoint in restricted_routes and 'user' not in session:
+        print("==== / redirect to /login")
         return redirect('/login')
 
 @app.route('/logout')
 def logout():
     if "user" in session:
         del session['user']
+    print("==== /logout redirect to /home")
     return redirect('/home')
 
 @app.route('/home')
 def avocado():
-  return render_template("home.html")
+    print("==== /home")
+    return render_template("home.html")
 
 @app.route('/index', methods=['POST', 'GET'])
 def index():
+    print("==== /index")
     items = Item.query.all()
     return render_template('index.html', items=items)
 
 @app.route('/saved_items', methods=['POST', 'GET'])
 def my_stuff():
+    print("==== /saved_items",request.method)
     if request.method == 'POST':
         item_name = request.form['item']
-        print("==== POST")
-        owner = User.query.filter_by(username=session['user']).first()
-        new_item = Item(item_name, owner.id)
+        print("==== saved_items before User.query, item_name=",item_name)
+        user = User.query.filter_by(username=session['user']).first()
+        owner=user.id
+        print("==== user")
+        print(user)
+        print("==== owner")
+        print(owner)
+        print("==== saved_items after User query, owner=",owner)
+        new_item = Item(item_name, owner)
         db.session.add(new_item)
+        print("==== saved_items after add",item_name,owner)
         db.session.commit()
+        print("==== saved_items after commit",item_name,owner)
 
-    owner = User.query.filter_by(username=session['user']).first()
-    print("==== Owner =",owner.id)
-    items = Item.query.filter_by(owner=owner.id).all()
-    return render_template("saved_items.html",items=items)
+    print("==== /saved_items before Item.query")
+    items = Item.query.filter_by(owner=session['user']).all()
+    print("==== /saved_items after Item.query")
+    return render_template("saved_items.html", items=items)
 
 # @app.route("/welcome")
 # def welcome_in():
