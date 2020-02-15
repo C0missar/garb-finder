@@ -14,6 +14,7 @@ class User (db.Model):
     # id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(120), primary_key=True)
     password = db.Column(db.String(120))
+    #saved_item = db.relationship("Item", backref = "owner")
 
     def __init__(self, username, password):
         self.username = username
@@ -32,7 +33,6 @@ class Item (db.Model):
     # time_period_start = db.Column(db.Integer)
     # time_period_end = db.Column(db.Integer)
     owner = db.Column(db.String(120), db.ForeignKey(User.username))
-    saved_item = db.relationship("Kit", backref = "itemid", lazy=True)
     
     def __init__(self, name,  owner):
     # description, culture, climate, gender, item_type, time_period_start, time_period_end,
@@ -155,36 +155,43 @@ def avocado():
 @app.route('/index', methods=['POST', 'GET'])
 def index():
     if request.method == 'POST':
-        new_kit = Kit(request.form.get('name'), session['user'])
+        print("=====1")
+        print (request.form)
+        item_id = request.form.get('name')
+        print ("=====2")
+        print (item_id)
+        user = User.query.filter_by(username=session['user']).first()
+        print ("=====4")
+        print (user)
+        new_kit = Kit(item_id, user.username)
+        print ("=====5")
+        print (user.username)
+        print ("=====6")
+        print (new_kit)
         db.session.add(new_kit)
         db.session.commit()
-        print ("Added Kit = ",new_kit.kit_id,new_kit.item_id,new_kit.username)
     items = Item.query.all()
     return render_template('index.html', items=items)
 
 @app.route('/saved_items', methods=['POST', 'GET'])
 def my_stuff():
     if request.method == 'POST':
-        new_item = Item(request.form['item'], session['user'])
+        item_name = request.form['item']
+        owner = User.query.filter_by(username=session['user']).first()
+        new_item = Item(item_name, owner.username)
         db.session.add(new_item)
         db.session.commit()
-        print ("Added Item = ",new_item.id,new_item.name,new_item.owner)
-        new_kit = Kit(new_item.id, session['user'])
-        db.session.add(new_kit)
-        db.session.commit()
-        print ("Added Kit = ",new_kit.kit_id,new_kit.item_id,new_kit.username)
-    items = Item.query.filter_by(owner=session['user']).all()
-    for i in items:
-        print ("items: ",i.id,i.name,i.owner)
-    #return render_template("saved_items.html", items = items)
-    kit_items = Kit.query.filter_by(username=session['user']).all()
-    for i in kit_items:
-        print (i.kit_id,i.item_id,i.username,i.itemid.name,i.itemid.owner)
-    return render_template("saved_items.html", items = kit_items)
+    owner = User.query.filter_by(username=session['user']).first()
+    print ("=====")
+    print (owner.username)
+    print ("=====")
+    items = Item.query.filter_by(owner=owner.username).all()
+    return render_template("saved_items.html", items = items)
 
 # @app.route("/welcome")
 # def welcome_in():
-#     return render_template("welcome.html", username=session['user'])
+#     username = request.args.get("username")  
+#     return render_template("welcome.html", username=username)
 
 @app.route("/")
 def default():

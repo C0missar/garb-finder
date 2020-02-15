@@ -1,0 +1,57 @@
+In /index POST, /saved_items GET and /saved_items POST:
+
+	This line no longer means anything - it was a holdover from when we had to translate from User.id to User.username:
+
+		user = User.query.filter_by(username=session['user']).first()
+		print (user.username)
+
+	It's looking in to the database to find the user "Fred" by saying "What's Fred's name?".  Ansewer - "Fred"!  We already knew that!  Better to say:
+
+		print (session['user'])
+
+	Better would be:
+
+		Active_User = session('user')) # (This means the user that is currently logged in)
+		or even clearer, just plug in session('user')) any time you need it
+
+
+
+In /saved_items POST:
+
+	Need to add the new Item record, and then a Kit record for the owner (you knew that, but I tried it)
+
+
+
+And now for the fun parts.  In /saved_items GET:
+
+	To get a list of items OWNED by the active user (or any specified user):
+
+		items = Item.query.filter_by(owner=Active_User).all()
+		for i in items:
+			print (items.id,items.name,items.owner)
+
+	To get a list of kit item IDs SAVED by the active user (or any specified user): (and 'kits' really should be the plural of 'kit' - ask any of the mooses)
+
+		kit_items = Kit.query.filter_by(username=Active_User).all()
+		for i in kit_items:
+			print (kit_items.kit_id,kit_items.item_id,kit_items.username)
+
+	But we don't want just the item.id, we want the whole item.  This is where the backref comes in - it's an implicit, automatic join.
+	By adding to the Item class this backref:
+
+	    saved_item = db.relationship("Kit", backref = "itemid")
+
+	We've actually added a new property to the Kit class called Kit.item, which is itself an Item record with all of it's properties, i.e.
+
+		kit_items = Kit.query.filter_by(username=session['user']).all()
+		for i in kit_items:
+			print (kit_items.kit_id,kit_items.item_id,kit_items.username,kit_items.itemid.id,kit_items.itemid.name,kit_items.itemid.owner)
+		# (No idea what the "saved_items" label actually refers to in the backref, if anything)
+
+
+Backrefs:
+
+	https://flask-sqlalchemy.palletsprojects.com/en/2.x/models/?highlight=join
+	https://docs.sqlalchemy.org/en/13/orm/backref.html
+
+Auto-increment fields - don't exist until the db_commit() has happened!
